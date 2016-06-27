@@ -1,0 +1,54 @@
+html, body {
+	text-align: left;
+	overflow:hidden;
+	margin: 0;
+}
+
+/* CSS techniques examples: http://www.htmlgoodies.com/html5/client/common-techniques-in-responsive-web-design.html#fbid=q3_-oSNiotY */
+
+header {
+	margin-bottom: 0;
+}
+
+header p {
+	margin: 0;
+	padding: 0em;
+	background: rgba(250, 252, 255, 0.7);
+}
+
+.content, canvas {
+	background: white;
+}
+
+.content {
+	overflow: hidden;
+	padding: 0em;
+	/*box-sizing: border-box;*/
+}
+
+.loading {
+	position: relative;
+}
+
+/*.loading:after {
+	content: url("../art/loading.gif");
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	margin: -13px 0 0 -51px;
+	opacity: 0.8;
+}*/
+
+#error, #mobile {
+	display:none;
+	text-align: left;
+	padding: 0em;
+}
+
+body.embedded header {
+	display: none;
+}
+
+body.embedded {
+	margin: 0;
+}

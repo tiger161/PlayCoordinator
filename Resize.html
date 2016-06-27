@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+	<!-- Using this metatag users can't scale the page using pinchIn/out gestures on mobile devices -->
+	<meta name="viewport" content="width=320; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+
+	<script src="https://code.createjs.com/easeljs-0.8.1.min.js"></script>
+	<script src="https://code.createjs.com/preloadjs-0.6.1.min.js"></script>
+	<script src="https://code.createjs.com/soundjs-0.6.1.min.js"></script>
+	
+	<title>EaselJS demo: Resize</title>	
+
+	<style type="text/css">
+
+		/* Remove margins and HTML scrollbars */
+		BODY, HTML  {
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+		}
+	</style>
+</head>
+
+<body onLoad="init();">
+	<canvas id="demoCanvas" width="800" height="600"  >
+		alternate content
+	</canvas>
+	
+	<!-- Not sure why but cannot have Javascript outside of the body -->
+	
+	<script>
+
+		var canvas, stage;
+		var bg, logo;		
+		var container, storyImg, storyImg2;
+		var rightArrow, leftArrow;
+		var contentWidth, contentHeight;
+		var imgPath = "Story_Images_1/";
+		var IMAGE_WIDTH = 2222;
+		var IMAGE_HEIGHT = 1250;
+		var ARROW_SIDE = 270;
+
+		// Resize event listener
+		window.addEventListener('resize', resize);
+		
+		/**
+		 * Init handler
+		 */
+		 
+		function init() {
+			canvas = document.getElementById("demoCanvas");
+			stage = new createjs.Stage(canvas);
+			
+			createBackground();
+			createContent();
+			
+			/**
+			 * Tick Handler
+			 */
+			createjs.Ticker.addEventListener("tick", stage);
+			
+			resize();
+		}
+		
+		/**
+		 * create and display the background (fullscreen)
+		 */
+		function createBackground() {
+			
+			bg = new createjs.Shape();		
+			stage.addChild(bg);
+
+		}		
+		 
+		/**
+		 * create container (centered)
+		 */
+		function createContent() {
+			
+			// Obtain the current draw space
+			contentWidth = document.getElementById("demoCanvas").offsetWidth;
+			contentHeight = document.getElementById("demoCanvas").offsetHeight;
+
+			container = new createjs.Container();
+			stage.addChild(container);
+			
+			// Load the Image
+			// (You should also use PreloadJS to avoid the onload listener)
+			storyImg = new Image();
+			storyImg.src = imgPath +"web_voice_v2-00.jpg";
+			storyImg.onload = step2; //handleImageLoad;
+			//alert("image loaded");
+		}
+		
+		function step2(){
+			storyImg2 = new Image();
+			storyImg2.src = imgPath +"right_arrow.jpg";
+			storyImg2.onload = handleImageLoad;
+		}
+		
+		function handleImageLoad() {
+			// Create a CreateJS bitmap from the loaded image
+			var bmpStoryImage = new createjs.Bitmap(storyImg);
+			// Add the bitmap to the Container
+			container.addChild(bmpStoryImage);
+			
+			var bmpStoryImage2 = new createjs.Bitmap(storyImg2);
+			bmpStoryImage2.x = 20;
+			bmpStoryImage2.y = 20;
+			bmpStoryImage2.addEventListener("click", Clck);
+			container.addChild(bmpStoryImage2);
+			
+			// Set the scale value
+			// It could be useful to properly handle different mobile resolutions
+			container.scaleX = 0.5;
+			container.scaleY = 0.5;
+			
+			//Create the introduction to story
+			txtintro = new createjs.Text();
+			txtintro.set({
+				text: "Welcome to Story 1",
+				font: "bold 90px Arial",
+				color: "#ff7700",
+			});
+			txtintro.shadow = new createjs.Shadow("#000000", 0, 0, 10);
+			var introw = txtintro.getMeasuredWidth(); //Check width of text to be displayed
+			txtintro.x = IMAGE_WIDTH/2 - (introw / 2); // Center text
+			txtintro.y = IMAGE_HEIGHT/2 - 45;
+			
+			// Add the shape to the container
+			// Used to place the shape at the top layer
+			container.addChild(txtintro);
+			container.setChildIndex(txtintro, 1);
+			
+			// Create left rectangular button
+			prvShape = new createjs.Shape();
+			prvShape.graphics.beginFill("#ff8c00").drawRoundRect(0, 0, 270, IMAGE_HEIGHT - 140, 30);  
+			prvShape.graphics.beginStroke("#000000").setStrokeStyle(3).drawRoundRect(0, 0, 270, IMAGE_HEIGHT - 140, 30);
+			prvShape.x = 40;
+			prvShape.y = 40;
+			prvShape.shadow = new createjs.Shadow("#000000", 5, 5, 10);
+			
+			// Add the shape to the container
+			// Used to place the shape at the top layer
+			container.addChild(prvShape);
+			container.setChildIndex(prvShape, 1);
+			//prvShape.addEventListener("click", prvClck);
+					
+			// Create right rectangular button
+			nxtShape = new createjs.Shape();
+			nxtShape.graphics.beginFill("#ff8c00").drawRoundRect(0, 0, 270, IMAGE_HEIGHT - 140, 30);
+			nxtShape.graphics.beginStroke("#000000").setStrokeStyle(3).drawRoundRect(0, 0, 270, IMAGE_HEIGHT - 140, 30);
+			nxtShape.x = IMAGE_WIDTH - 310;
+			nxtShape.y = 40;
+			nxtShape.shadow = new createjs.Shadow("#000000", 5, 5, 10);
+			nxtShape.addEventListener("click", NxtClck);
+						
+			// Add the shape to the container
+			// Used to place the shape at the top layer
+			container.addChild(nxtShape);
+			container.setChildIndex(nxtShape, 1);
+			
+			// Create the Next Text
+			nexttxt = new createjs.Text();
+			nexttxt.font = "bold 50px Arial";
+			nexttxt.color = "#000000";
+			nexttxt.text = "Next";
+			nexttxt.shadow = new createjs.Shadow("#000000", 2, 2, 4);
+			nexttxt.x = IMAGE_WIDTH - 230;
+			nexttxt.y = IMAGE_HEIGHT - 80;
+						
+			// Add the shape to the container
+			// Used to place the shape at the top layer
+			container.addChild(nexttxt);
+			container.setChildIndex(nexttxt, 1);
+			
+			// Add the left arrow to the button
+			/*BUG*/
+			
+			// Add the right arrow to the button
+			/*BUG*/
+			
+			// Create the Previous Text
+			prevtxt = new createjs.Text();
+			prevtxt.font = "bold 50px Arial";
+			prevtxt.color = "#000000";
+			prevtxt.text = "Previous";
+			prevtxt.shadow = new createjs.Shadow("#000000", 2, 2, 4);
+			prevtxt.x = 75;
+			prevtxt.y = IMAGE_HEIGHT - 80;
+						
+			// Add the shape to the container
+			// Used to place the shape at the top layer
+			container.addChild(prevtxt);
+			container.setChildIndex(prevtxt, 1);
+					
+			// Set the registration point of the content Container to center
+			container.regX = bmpStoryImage.image.width/2;
+			container.regY = bmpStoryImage.image.height/2;
+			
+			//stage.update();		
+			resize();
+		}
+		
+		function Clck(event) {
+			alert("The click worked");
+		}
+		function NxtClck(event) {
+			alert("Next button click.");
+		}
+			
+		/**
+		 * Resize event handler
+		 */
+		function resize() {
+			
+			var w = window.innerWidth-2;
+			var h = window.innerHeight-2;
+
+			stage.canvas.width = w;
+			stage.canvas.height = h;
+
+			// Simple "fit-to-screen" scaling
+			var ratio = IMAGE_WIDTH / IMAGE_HEIGHT; // Use the "default" size of the content you have.
+			var windowRatio = w/h;
+			
+			// calculate a scale factor to keep a correct aspect ratio.			
+			var scale = w/IMAGE_WIDTH;
+			if (windowRatio > ratio) {
+				scale = h/IMAGE_HEIGHT;
+			}
+			
+			// Background: full screen redraw 
+	    	bg.graphics.clear()
+	    	bg.graphics.beginFill("#222").drawRect(0, 0, stage.canvas.width, stage.canvas.height);
+			
+			// Content: centered
+	        container.x = stage.canvas.width / 2;
+	        container.y = stage.canvas.height / 2; 
+			
+			// Scale up to fit width or height
+			container.scaleX = container.scaleY = scale;
+			
+			stage.update();
+		
+	    }
+
+	</script>
+</body>
+</html>

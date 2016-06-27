@@ -1,0 +1,62 @@
+Header:
+	Create the HTML document
+	Setup a div for the Canvas
+	
+Script:
+	Contains instructions to create and animate the story
+	
+	Variables:
+		Required variables
+		Add event listener to display window of browser
+	
+	
+	Functions:
+		
+		Initialization:
+			Create canvas
+			Create stage
+			Create Background
+			Load all sound files
+				Setup sound file listeners
+				Play sounds when loading finished
+			Load all image files
+				Create image container when finished
+			Call Resize function
+		
+		Create Background
+			Create image to dimensions of current window size to
+				draw behind images
+				Update of size done in resize function
+		
+		Create Container
+			Holds all images in story
+			Begins with initial image
+				Other images are place on and replaced during story
+			Linked to Image Load:
+				Creates arrows for left and right "page" turns
+					Attaches event listeners
+			Call Resize function
+			
+		Next Click
+			Update sound and song counters
+			Remove previous images from container
+			Create and add new images to container
+		
+		Previous Click
+			Update sound and song counters
+			Remove previous images from container
+			Create and add new images to container
+		
+		Choices
+			Add left, middle, and right images at certain locations
+			Correct choice
+				Advance image and sound counters
+			Incorrect choice
+				Remove previous images
+				Add oops images and sound
+				
+		Resize
+			Determine window dimensions and ratio
+			Scale background to correct window size
+			Scale container to fit image with proper scale in window
+			Update stage

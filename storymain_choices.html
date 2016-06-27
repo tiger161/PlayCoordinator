@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>CreateJS Story Demo</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+	<meta name="viewport" content="initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+	<link href="storystyle.css" rel="stylesheet" type="text/css"/>
+	
+	<script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
+	<script src="https://code.createjs.com/preloadjs-0.6.2.min.js"></script>
+	<script src="https://code.createjs.com/soundjs-0.6.2.min.js"></script>
+</head>
+<body onload="init();">
+
+<!--
+<header class="CreateJS">
+	<h1>Story Example</h1>
+	
+	<p>This example is used to show the story with initial buttons
+		to progress between pages.</p>
+</header>
+
+Link to dynamic resizing ideas:
+https://github.com/CreateJS/EaselJS/issues/343
+-->
+<!--
+<div id="error">
+	<h2>Sorry!</h2>
+
+	<p>SoundJS is not currently supported in your browser.</p>
+
+	<p>Please <a href="http://github.com/CreateJS/SoundJS/issues" target="_blank">log a bug</a>
+		with the device and browser you are using. Thank you.</p>
+</div>
+-->
+<div>
+	<canvas id="demoCanvas" width="800" height="600"></canvas>
+</div>
+
+
+<script id="editable">
+	// Image Variables
+	var stage;
+	var bg; 			// Background
+	var imgqueue;		// Queue for all images
+	var musicqueue;		// Queue for all sounds
+	var container, bmp;	// Container object, image object
+	var prvShape, nxtShape;
+	var prvArrow, nxtArrow;
+	var running = false;
+	
+	var leftImg, middleImg, rightImg;	// Variables to hold choice image objects
+	
+	// Constants
+	var musicPath = "Story_Audio/";
+	var imgPath = "Story_Images_3/";
+	var IMAGE_WIDTH = 2200;
+	var IMAGE_HEIGHT = 1238;
+	var ARROW_SIDE = 230;
+	
+	var slide = 0;		// Variable to access the image and song queues
+	var song = 0;
+	
+	// Text Variables
+	var txtintro;
+	var prevtxt;
+	var nexttxt;
+	
+	// Sound Variables
+	var src;            // the audio src we are trying to play
+	var soundInstance;  // the soundInstance returned by Sound when we create or play a src
+	var canvas;  		// the canvas we draw to
+	
+	// Resize event listener
+	window.addEventListener('resize', resize);
+		
+	function init() {
+		// this does two things, it initializes the default plugins, and if that fails the if statement triggers and we display an error
+		
+		// if initializeDefaultPlugins returns false, we cannot play sound in this browser
+		if (!createjs.Sound.initializeDefaultPlugins()) {return;}
+			
+		// create a new stage and point it at our canvas:
+		canvas = document.getElementById("demoCanvas");
+		stage = new createjs.Stage(canvas);
+		
+		// Create the background
+		createBackground();		
+		
+		var musicManifest = [
+			{id: "0", src: musicPath + "audio_00.mp3"},
+			{id: "1", src: musicPath + "audio_01.mp3"},
+			{id: "2", src: musicPath + "audio_02.mp3"},
+			{id: "3", src: musicPath + "audio_03.mp3"},
+			{id: "4", src: musicPath + "audio_04.mp3"},
+			{id: "5", src: musicPath + "audio_05.mp3"},
+			{id: "6", src: musicPath + "audio_06.mp3"},
+			{id: "7", src: musicPath + "audio_07.mp3"},
+			{id: "8", src: musicPath + "audio_08.mp3"},
+			{id: "9", src: musicPath + "audio_09.mp3"},
+			{id: "10", src: musicPath + "audio_10.mp3"},
+			{id: "11", src: musicPath + "audio_11.mp3"},
+			{id: "12", src: musicPath + "audio_12.mp3"},
+			{id: "13", src: musicPath + "audio_13.mp3"},
+			{id: "14", src: musicPath + "audio_14.mp3"},
+			{id: "15", src: musicPath + "audio_15.mp3"},
+			{id: "16", src: musicPath + "audio_16.mp3"},
+			{id: "17", src: musicPath + "audio_17.mp3"},
+			{id: "18", src: musicPath + "audio_18.mp3"},
+			{id: "19", src: musicPath + "audio_19.mp3"},
+			{id: "20", src: musicPath + "audio_20.mp3"},
+			{id: "game", src: musicPath + "M-GameBG.ogg"},
+			{id: "higher", src: musicPath + "bensound-goinghigher.mp3"},
+			{id: "happy", src: musicPath + "bensound-happiness.mp3"},
+			{id: "oops", src: musicPath + "audio_oops.mp3"},
+			{id: "coin", src: musicPath + "coin.mp3"}
+		]
+		
+		// Instantiate a music queue.
+		musicqueue = new createjs.LoadQueue();
+		createjs.Sound.alternateExtensions = ["mp3"];	// add other extensions to try loading if the src file extension is not supported
+		musicqueue.installPlugin(createjs.Sound);
+		musicqueue.addEventListener("complete", loadComplete);
+		musicqueue.addEventListener("fileload", fileComplete);
+		musicqueue.addEventListener("error", handleFileError);
+		musicqueue.addEventListener("fileprogress", handleFileProgress);
+		musicqueue.addEventListener("progress", handleProgress);
+		musicqueue.loadManifest(musicManifest);
+		
+		
+		// Royalty free sound clips: http://www.bigsoundbank.com/
+		// Royalty free music songs: http://www.bensound.com/
+		
+		//canvas.innerHTML = "Waiting for load to complete.";  // letting the user know what's happening
+		
+		
+		// Method: Display a slideshow
+		imgqueue = new createjs.LoadQueue(false); // Creates a new queue (false is important)
+		imgqueue.setMaxConnections(10); // Allows 10 concurrent connections for load
+		
+		// Need to call container creator
+		imgqueue.addEventListener("complete", createContainer); // Calls handleCmplt when load is finished
+		
+		
+		imgqueue.loadManifest([
+				    {id:'0', src: imgPath + 'story1-newratio-00.png'},
+					{id:'1', src: imgPath + 'story1-newratio-01.png'},
+				    {id:'2', src: imgPath + 'story1-newratio-02.png'},
+					{id:'3', src: imgPath + 'story1-newratio-03.png'},
+					{id:'4', src: imgPath + 'story1-newratio-04.png'},
+					{id:'5', src: imgPath + 'story1-newratio-05.png'},
+					{id:'6', src: imgPath + 'story1-newratio-06.png'},
+					{id:'7', src: imgPath + 'story1-newratio-07.png'},
+					{id:'8', src: imgPath + 'story1-newratio-08.png'},
+					{id:'9', src: imgPath + 'story1-newratio-09.png'},
+					{id:'10', src: imgPath + 'story1-newratio-10.png'},
+					{id:'11', src: imgPath + 'story1-newratio-11.png'},
+					{id:'12', src: imgPath + 'story1-newratio-12.png'},
+					{id:'13', src: imgPath + 'story1-newratio-13.png'},
+					{id:'14', src: imgPath + 'story1-newratio-14.png'},
+					{id:'15', src: imgPath + 'story1-newratio-15.png'},
+					{id:'16', src: imgPath + 'story1-newratio-16.png'},
+					{id:'17', src: imgPath + 'story1-newratio-17.png'},
+					{id:'18', src: imgPath + 'story1-newratio-18.png'},
+					{id:'19', src: imgPath + 'story1-newratio-19.png'},
+					{id:'20', src: imgPath + 'story1-newratio-20.png'},
+					{id:'popsicle', src: imgPath + 'popsicle.png'},
+					{id:'pop_highlight', src: imgPath + 'popsicle_highlight.png'},
+					{id:'starfish', src: imgPath + 'starfish.png'},
+					{id:'star_highlight', src: imgPath + 'starfish_highlight.png'},
+					{id:'shovel', src: imgPath + 'shovel.png'},
+					{id:'shovel_highlight', src: imgPath + 'shovel_highlight.png'},
+					{id:'bathingsuit', src: imgPath + 'bathingsuit.png'},
+					{id:'suit_highlight', src: imgPath + 'bathingsuit_highlight.png'},
+					{id:'beachumbrella', src: imgPath + 'beachumbrella.png'},
+					{id:'umbrella_highlight', src: imgPath + 'beachumbrella_highlight.png'},
+					{id:'bucket', src: imgPath + 'bucket.png'},
+					{id:'bucket_highlight', src: imgPath + 'bucket_highlight.png'},
+					{id:'oops-01', src: imgPath + 'oops-01.png'},
+					{id:'oops-02', src: imgPath + 'oops-02.png'},
+					{id:'right', src: imgPath + 'right_arrow.png'},
+					{id:'left', src: imgPath + 'left_arrow.png'}
+		]); // Preloads all images, Images paired with number id tags
+		
+		resize();
+	}
+	
+	/**
+	 * create and display the background (fullscreen)
+	 */
+	function createBackground() {
+		bg = new createjs.Shape();		
+		stage.addChild(bg);
+	}
+	/**
+	 * create container (centered)
+	 */
+	function createContainer() {
+		
+		// Obtain the current draw space
+		contentWidth = document.getElementById("demoCanvas").offsetWidth;
+		contentHeight = document.getElementById("demoCanvas").offsetHeight;
+
+		container = new createjs.Container();
+		//container.addEventListener("click", nxtClck);
+		stage.addChild(container);
+				
+		// Load the Image
+		storyImg = new Image();
+		storyImg.src = imgPath +"story1-newratio-00.png";
+		storyImg.onload = handleImageLoad;
+	}
+	
+	function handleImageLoad() {
+		// Create a CreateJS bitmap from the loaded image
+		var bmpStoryImage = new createjs.Bitmap(storyImg);
+		
+		// Add the bitmap to the Container
+		container.addChild(bmpStoryImage);
+		
+		// Set the scale value
+		// It could be useful to properly handle different mobile resolutions
+		container.scaleX = 0.5;
+		container.scaleY = 0.5;
+						
+		// Add the next arrow to the existing button
+		nxtArrow = new createjs.Bitmap(imgqueue.getResult("right"));
+		nxtArrow.x = IMAGE_WIDTH-280;
+		nxtArrow.y = IMAGE_HEIGHT/2 - ARROW_SIDE/2;
+		nxtArrow.addEventListener("click", nxtClck); /*BUG*/	// Including this following line of code will cause the images to display
+																// but will prevent all event listeners from functioning.
+		container.addChild(nxtArrow);
+		container.setChildIndex(nxtArrow, 1);
+		
+		// Add the previous arrow to the existing button
+		prvArrow = new createjs.Bitmap(imgqueue.getResult("left"));
+		prvArrow.x = 40;
+		prvArrow.y = IMAGE_HEIGHT/2 - ARROW_SIDE/2;
+		prvArrow.addEventListener("click", prvClck);/*BUG*/	// Including this following line of code will cause the images to display
+																// but will prevent all event listeners from functioning.
+		container.addChild(prvArrow);
+		container.setChildIndex(prvArrow, 1);
+		
+		
+		// Create left rectangular button
+		prvShape = new createjs.Shape();
+		prvShape.graphics.beginFill("#ffffff").drawRoundRect(0, 0, 270, IMAGE_HEIGHT - 140, 30);  // Original orange color: #ff8c00
+		//prvShape.graphics.beginStroke("#000000").setStrokeStyle(3).drawRoundRect(0, 0, 270, IMAGE_HEIGHT - 140, 30);
+		prvShape.x = 40;
+		prvShape.y = 40;
+		prvShape.alpha = 0.01;
+		//prvShape.shadow = new createjs.Shadow("#000000", 5, 5, 10);
+		prvShape.addEventListener("click", prvClck);
+		
+		// Add the shape to the container
+		// Used to place the shape at the top layer
+		container.addChild(prvShape);
+		container.setChildIndex(prvShape, 1);
+		
+		// Create right rectangular button
+		nxtShape = new createjs.Shape();
+		nxtShape.graphics.beginFill("#ffffff").drawRoundRect(0, 0, 270, IMAGE_HEIGHT - 140, 30); // Original orange color: #ff8c00
+		//nxtShape.graphics.beginStroke("#000000").setStrokeStyle(3).drawRoundRect(0, 0, 270, IMAGE_HEIGHT - 140, 30);
+		nxtShape.x = IMAGE_WIDTH - 310;
+		nxtShape.y = 40;
+		nxtShape.alpha = 0.01;
+		//nxtShape.shadow = new createjs.Shadow("#000000", 5, 5, 10);
+		nxtShape.addEventListener("click", nxtClck);
+		
+		// Add the shape to the container
+		// Used to place the shape at the top layer
+		container.addChild(nxtShape);
+		container.setChildIndex(nxtShape, 1);
+						
+		// Set the registration point of the content Container to center
+		container.regX = bmpStoryImage.image.width/2;
+		container.regY = bmpStoryImage.image.height/2;
+		
+		//stage.update();		
+		resize();
+	}
+	
+	// Sound handling methods
+	function handleFileError(evt) {
+		// An error occurred.
+		//console.log("error ", evt);
+		//canvas.innerText = "Error :("
+		//alert("Error :(");
+	}
+
+	function handleFileProgress(evt) {
+		// Progress happened.
+		//canvas.innerText = "Event File Loading: " + (queue.progress.toFixed(2) * 100) + "%";
+		//alert("Event File Loading");
+	}
+
+	function handleProgress(evt) {
+		// Progress happened.
+		//canvas.innerText = "Event Loading: " + (queue.progress.toFixed(2) * 100) + "%";
+	}
+
+	function loadComplete(evt) {
+		// Load completed.
+		//alert("Complete :)");
+		//playSound("happy");
+		playSound("0");
+	}
+
+	function fileComplete(evt) {
+		//console.log("Event Callback file loaded ", evt);
+		//alert("File loaded");
+	}
+
+	function playSound(name) {
+		// Play the sound using the ID created above.
+		//soundInstance = createjs.Sound.play(name);
+		
+		//For testing
+		soundInstance = createjs.Sound.play(name);
+		soundInstance.addEventListener("complete", nxtClck);
+		//return createjs.Sound.play(name);
+	}
+	
+	/**
+	 *	Previous Click Handler
+	 */
+	function nxtClck(event){
+		// Remove the title text from the container
+		if(slide >= 0 && !running){
+			container.removeChild(txtintro);
+			running = true;
+		}
+		// Moves current slide to the next slide	
+		slide = slide + 1; //Set counter to previous or next slide
+		song = song + 1;	//Set counter to previous or next song
+		// Stop any song currently playing
+		createjs.Sound.stop();
+		
+		// Remove existing images
+		container.removeChild(bmp);
+		container.removeChild(leftImg);
+		container.removeChild(middleImg);
+		container.removeChild(rightImg);
+		
+		bmp = new createjs.Bitmap(imgqueue.getResult(slide.toString())); //Convert counter to string
+		// Adding to Container
+		container.addChildAt(bmp,1);
+		
+		// Choice needs to be added starting at slide 7 to slide 10
+		// Image locations
+		// Left:	300x250px	400x850px
+		// Middle:	780x250px	660x850px
+		// Right:	1500x250px	450x850px
+		if (slide == 7) { //highlight popsicle (image left)
+			// Add the left image
+			addLeftImage("pop_highlight", 300, 250, 0);
+						
+			// Add the middle image
+			addMiddleImage("starfish", 780, 250, 0);
+						
+			// Add the right image
+			addRightImage("shovel", 1500, 250, 1);
+		}
+		else if (slide == 8) { //highlight starfish (image mid)
+			// Add the left image
+			addLeftImage("popsicle", 300, 250, 0);
+						
+			// Add the middle image
+			addMiddleImage("star_highlight", 780, 250, 0);
+						
+			// Add the right image
+			addRightImage("shovel", 1500, 250, 1);
+		}
+		else if (slide == 9) { //highlight shovel (image right)
+			// Add the left image
+			addLeftImage("popsicle", 300, 250, 0);
+						
+			// Add the middle image
+			addMiddleImage("starfish", 780, 250, 0);
+						
+			// Add the right image
+			addRightImage("shovel_highlight", 1500, 250, 1);
+		}
+		else if (slide == 10){ //no highlights
+			// Add the left image
+			addLeftImage("popsicle", 300, 250, 0);
+						
+			// Add the middle image
+			addMiddleImage("starfish", 780, 250, 0);
+						
+			// Add the right image
+			addRightImage("shovel", 1500, 250, 1);
+		}	
+		
+		// Choice needs to be added starting at slide 12 to slide 15
+		// Image locations
+		// Left:	250x200px	450x900px
+		// Middle:	770x200px	570x900px
+		// Right:	1450x200px	450x900px
+		if (slide == 12) { //highlight bathingsuit (image left)
+			// Add the left image
+			addLeftImage("suit_highlight", 250, 200, 0);
+						
+			// Add the middle image
+			addMiddleImage("beachumbrella", 770, 200, 0);
+						
+			// Add the right image
+			addRightImage("bucket", 1450, 200, 1);
+		}
+		else if (slide == 13) { //highlight beachumbrella (image mid)
+			// Add the left image
+			addLeftImage("bathingsuit", 250, 200, 0);
+						
+			// Add the middle image
+			addMiddleImage("umbrella_highlight", 770, 200, 0);
+						
+			// Add the right image
+			addRightImage("bucket", 1450, 200, 1);
+		}
+		else if (slide == 14) { //highlight bucket (image right)
+			// Add the left image
+			addLeftImage("bathingsuit", 250, 200, 0);
+						
+			// Add the middle image
+			addMiddleImage("beachumbrella", 770, 200, 0);
+						
+			// Add the right image
+			addRightImage("bucket_highlight", 1450, 200, 1);
+		}
+		else if (slide == 15){ //no highlights
+			// Add the left image
+			addLeftImage("bathingsuit", 250, 200, 0);
+						
+			// Add the middle image
+			addMiddleImage("beachumbrella", 770, 200, 0);
+						
+			// Add the right image
+			addRightImage("bucket", 1450, 200, 1);
+		}	
+		
+		// Adding to Container
+		container.addChildAt(bmp,1);
+		
+		// Run thru images
+		if (slide > 20) { //Stop counter from going past end of slide ids
+			slide = 20;
+			
+			/*BUG*/
+			// Remove Event Listener when story is complete
+			//soundInstance.removeEventListener("complete", nxtClck);
+			
+			/*BUG*/
+			// Quick fix to stop looping sound
+			createjs.Sound.removeAllSounds();
+		}
+				
+		// Run thru songs
+		// For use with audio for each slide
+		if (song > 20) { //Stop counter from going past end of song ids
+			song = 20;
+		}
+		playSound(song.toString());
+		
+		// Make sure that everything is sized correctly and the stage updated
+		resize();
+	}
+	
+	/**
+	 *	Previous Click Handler
+	 */
+	
+	function prvClck(event){
+		// Moves current slide to the previous slide
+		slide = slide - 1;	//Set counter to previous or next slide
+		song = song - 1;	//Set counter to previous or next song
+		// Stop any song currently playing
+		createjs.Sound.stop();
+		
+		// Remove existing images
+		container.removeChild(bmp);
+		container.removeChild(leftImg);
+		container.removeChild(middleImg);
+		container.removeChild(rightImg);
+		
+		// Run thru images
+		if (slide < 0) { //Stop counter from going negative
+			slide = 0;
+		}
+		
+		bmp = new createjs.Bitmap(imgqueue.getResult(slide.toString())); //Convert counter to string
+		
+		if (slide == 7) { //highlight popsicle (image left)
+			// Add the left image
+			addLeftImage("pop_highlight", 300, 250, 0);
+						
+			// Add the middle image
+			addMiddleImage("starfish", 780, 250, 0);
+						
+			// Add the right image
+			addRightImage("shovel", 1500, 250, 1);
+		}
+		else if (slide == 8) { //highlight starfish (image mid)
+			// Add the left image
+			addLeftImage("popsicle", 300, 250, 0);
+						
+			// Add the middle image
+			addMiddleImage("star_highlight", 780, 250, 0);
+						
+			// Add the right image
+			addRightImage("shovel", 1500, 250, 1);
+		}
+		else if (slide == 9) { //highlight shovel (image right)
+			// Add the left image
+			addLeftImage("popsicle", 300, 250, 0);
+						
+			// Add the middle image
+			addMiddleImage("starfish", 780, 250, 0);
+						
+			// Add the right image
+			addRightImage("shovel_highlight", 1500, 250, 1);
+		}
+		else if (slide == 10){ //no highlights
+			// Add the left image
+			addLeftImage("popsicle", 300, 250, 0);
+						
+			// Add the middle image
+			addMiddleImage("starfish", 780, 250, 0);
+						
+			// Add the right image
+			addRightImage("shovel", 1500, 250, 1);
+		}	
+		
+		// Choice needs to be added starting at slide 12 to slide 15
+		if (slide == 12) { //highlight bathingsuit (image left)
+			// Add the left image
+			addLeftImage("suit_highlight", 250, 200, 0);
+						
+			// Add the middle image
+			addMiddleImage("beachumbrella", 770, 200, 0);
+						
+			// Add the right image
+			addRightImage("bucket", 1450, 200, 1);
+		}
+		else if (slide == 13) { //highlight beachumbrella (image mid)
+			// Add the left image
+			addLeftImage("bathingsuit", 250, 200, 0);
+						
+			// Add the middle image
+			addMiddleImage("umbrella_highlight", 770, 200, 0);
+						
+			// Add the right image
+			addRightImage("bucket", 1450, 200, 1);
+		}
+		else if (slide == 14) { //highlight bucket (image right)
+			// Add the left image
+			addLeftImage("bathingsuit", 250, 200 , 0);
+						
+			// Add the middle image
+			addMiddleImage("beachumbrella", 770, 200, 0);
+						
+			// Add the right image
+			addRightImage("bucket_highlight", 1450, 200, 1);
+		}
+		else if (slide == 15){ //no highlights
+			// Add the left image
+			addLeftImage("bathingsuit", 250, 200, 0);
+						
+			// Add the middle image
+			addMiddleImage("beachumbrella", 770, 200, 0);
+						
+			// Add the right image
+			addRightImage("bucket", 1450, 200, 1);
+		}		
+		
+		// Adding to Container
+		container.addChildAt(bmp,1);
+		
+		// Run thru songs
+		// For use with audio for each slide
+		if (song < 0) { //Stop counter from going negative
+			song = 0;
+		}
+		playSound(song.toString());
+		
+		// Make sure that everything is sized correctly and the stage updated
+		resize();
+	}
+	
+	/**
+	 * Resize event handler
+	 */
+	function resize() {
+		
+		var w = window.innerWidth-2;
+		var h = window.innerHeight-2;
+
+		stage.canvas.width = w;
+		stage.canvas.height = h;
+
+		// Simple "fit-to-screen" scaling
+		var ratio = IMAGE_WIDTH / IMAGE_HEIGHT; // Use the "default" size of the content you have.
+		var windowRatio = w/h;
+		
+		// calculate a scale factor to keep a correct aspect ratio.			
+		var scale = w/IMAGE_WIDTH;
+		if (windowRatio > ratio) {
+			scale = h/IMAGE_HEIGHT;
+		}
+		
+		// Background: full screen redraw 
+		bg.graphics.clear()
+		bg.graphics.beginFill("#222").drawRect(0, 0, stage.canvas.width, stage.canvas.height);
+		
+		// Content: centered
+		container.x = stage.canvas.width / 2;
+		container.y = stage.canvas.height / 2; 
+		
+		// Scale up to fit width or height
+		container.scaleX = container.scaleY = scale;
+		
+		stage.update();
+	}
+
+	/**
+	 * Handler for correct choices
+	 */
+	function correctChoice(event) {
+		
+		// Jump to the next part of the story
+		if (slide >= 12) {
+			slide = 15;
+			song = 15;
+			nxtClck();
+		}
+		// Jump to the next part of the story
+		if (slide <= 10) {
+			slide = 10;
+			song = 10;
+			nxtClck();
+		}
+	}
+	
+	/**
+	 * Handlers to add images and event listeners
+	 */
+	function addLeftImage(name, xPos, yPos, answer) {
+		// Add new image to left choice option
+		leftImg = new createjs.Bitmap(imgqueue.getResult(name));
+		leftImg.x = xPos;
+		leftImg.y = yPos;
+		/* // Does not seem to allow choice of which answer is correct
+		if(answer > 0) {
+			// correct answer
+			leftImg.addEventListener("click", correctChoice);
+		}
+		else {
+			// incorrect answer
+			leftImg.addEventListener("click", oopsClck);
+		}*/	
+		
+		leftImg.addEventListener("click", oopsClck);
+		container.addChildAt(leftImg, 1);
+	}
+	
+	function addMiddleImage(name, xPos, yPos, answer) {	
+		// Add new image to the middle choice option
+		middleImg = new createjs.Bitmap(imgqueue.getResult(name));
+		middleImg.x = xPos;
+		middleImg.y = yPos;
+		/* // Does not seem to allow choice of which answer is correct
+		if(answer > 0) {
+			// correct answer
+			middleImg.addEventListener("click", correctChoice);
+		}
+		else {
+			// incorrect answer
+			middleImg.addEventListener("click", oopsClck);
+		}*/
+		
+		middleImg.addEventListener("click", oopsClck);
+		container.addChildAt(middleImg, 1);
+	}
+	
+	function addRightImage(name, xPos, yPos, answer) {	
+		// Add new image to the middle choice option
+		rightImg = new createjs.Bitmap(imgqueue.getResult(name));
+		rightImg.x = xPos;
+		rightImg.y = yPos;
+		/* // Does not seem to allow choice of which answer is correct
+		if(answer > 0) {
+			// correct answer
+			rightImg.addEventListener("click", correctChoice);
+		}
+		else {
+			// incorrect answer
+			rightImg.addEventListener("click", oopsClck);
+		}*/
+		
+		rightImg.addEventListener("click", correctChoice);
+		container.addChildAt(rightImg, 1);
+	}
+	
+	/**
+	 *	Oops Click Handler
+	 */
+	function oopsClck(event){
+		// Stop any song currently playing
+		createjs.Sound.stop();
+		
+		// Remove existing images
+		container.removeChild(bmp);
+		container.removeChild(leftImg);
+		container.removeChild(middleImg);
+		container.removeChild(rightImg);
+		
+		// Select the correct oops image to display.
+		bmp = new createjs.Bitmap(imgqueue.getResult("oops-01")); 	
+		
+		// Adding to Container
+		container.addChildAt(bmp,1);
+		
+		// Play the correct oops sound
+		playSound("oops");
+		
+		// Make sure that everything is sized correctly and the stage updated
+		resize();
+			
+		// Replay the slide and the song
+		slide = slide - 1;
+		song = song - 1;
+	
+	}
+</script>
+</body>
+</html>
+
+<!--
+Play multiple sound instances:
+
+var preload;
+
+function init() {
+	if (!createjs.Sound.initializeDefaultPlugins()) {
+		document.getElementById("error").style.display = "block";
+		document.getElementById("content").style.display = "none";
+		return;
+	}
+
+	//examples.showDistractor("content");
+	var assetsPath = "../_assets/audio/";
+	var sounds = [
+		{src: "Game-Break.ogg", id: 1},
+		{src: "Game-Spawn.ogg", id: 2},
+		{src: "Game-Shot.ogg", id: 3},
+
+		{src: "GU-StealDaisy.ogg", id: 4},
+		{src: "Humm.ogg", id: 5},
+		{src: "R-Damage.ogg", id: 6},
+
+		{src: "Thunder1.ogg", id: 7},
+		{src: "S-Damage.ogg", id: 8},
+		{src: "U-CabinBoy3.ogg", id: 9},
+
+		{src: "ToneWobble.ogg", id: 10},
+		{src: "Game-Death.ogg", id: 11},
+		{src: "Game-Break.ogg", id: 12}  //OJR would prefer a new sound rather than a copy
+	];
+
+	createjs.Sound.alternateExtensions = ["mp3"];	// add other extensions to try loading if the src file extension is not supported
+	createjs.Sound.addEventListener("fileload", createjs.proxy(soundLoaded, this)); // add an event listener for when load is completed
+	createjs.Sound.registerSounds(sounds, assetsPath);
+}
+
+function soundLoaded(event) {
+	//examples.hideDistractor();
+	var div = document.getElementById(event.id);
+	div.style.backgroundImage = "url('../_assets/art/audioButtonSheet.png')";
+}
+
+function stop() {
+	if (preload != null) {
+		preload.close();
+	}
+	createjs.Sound.stop();
+}
+
+function playSound(target) {
+	//Play the sound: play (src, interrupt, delay, offset, loop, volume, pan)
+	var instance = createjs.Sound.play(target.id);
+	if (instance == null || instance.playState == createjs.Sound.PLAY_FAILED) {
+		return;
+	}
+	target.className = "gridBox active";
+	instance.addEventListener("complete", function (instance) {
+		target.className = "gridBox";
+	});
+}
+--->
