@@ -143,9 +143,9 @@ https://github.com/CreateJS/EaselJS/issues/343
 		
 		
 		imgqueue.loadManifest([
-				    {id:'0', src: imgPath + 'story1-newratio-00.png'},
+				  {id:'0', src: imgPath + 'story1-newratio-00.png'},
 					{id:'1', src: imgPath + 'story1-newratio-01.png'},
-				    {id:'2', src: imgPath + 'story1-newratio-02.png'},
+				  {id:'2', src: imgPath + 'story1-newratio-02.png'},
 					{id:'3', src: imgPath + 'story1-newratio-03.png'},
 					{id:'4', src: imgPath + 'story1-newratio-04.png'},
 					{id:'5', src: imgPath + 'story1-newratio-05.png'},
@@ -325,6 +325,7 @@ https://github.com/CreateJS/EaselJS/issues/343
 	 *	Previous Click Handler
 	 */
 	function nxtClck(event){
+	  console.log("NEXT CLICKED!!!")
 		// Remove the title text from the container
 		if(slide >= 0 && !running){
 			container.removeChild(txtintro);
