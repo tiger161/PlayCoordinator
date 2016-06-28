@@ -13,20 +13,20 @@ var people = [
 	{name:"Florence",role:-1},
 	{name:"Gabriela",role:-1},
 	{name:"Henry",role:-1}
-];
-var results = [];
-var checkarrow,checkshape;
+]; // list of people, needs to be dynamic
+var results = []; // for displaying people and roles chosen
+var checkarrow,checkshape; // checkmark to confirm selection
 
-var title;
+var title; // text which indicates who needs to pick
 
 var musicPath = "Story_Audio/";
 var imgPath = "Story_Images_3/";
 var IMAGE_WIDTH = 2200;
 var IMAGE_HEIGHT = 1238;
 
-var NUM_ROLES=12;
+var NUM_ROLES=12; // number of roles to chose from
 
-var slide=0; //variables for current slide and music playing
+var slide=0; //variables for current slide,music playing, person picking role
 var song=0;
 var person=0;
 
@@ -146,9 +146,7 @@ function init() {
 	resize();
 }
 
-/**
- * create and display the background (fullscreen)
- */
+//create and display the background (fullscreen)
 function createBackground() {
 	bg = new createjs.Shape();		
 	stage.addChild(bg);
@@ -162,7 +160,6 @@ function createContainer() {
 	contentHeight = document.getElementById("demoCanvas").offsetHeight;
 
 	container = new createjs.Container();
-	//container.addEventListener("click", nxtClck);
 	stage.addChild(container);
 			
 	// Load the Image
@@ -183,6 +180,7 @@ function handleImageLoad() {
 	container.scaleX = 0.5;
 	container.scaleY = 0.5;
 					
+	//draw buttons for picking roles and back button
 	addRoleButtons();
 	addBackButton();
 					
@@ -194,6 +192,7 @@ function handleImageLoad() {
 	resize();
 }
 
+//create role buttons and title text and wait for clicks
 function addRoleButtons(){
   for(var i = 0; i < NUM_ROLES; i++){
 	  var button = new createjs.Bitmap(imgqueue.getResult("role"+(i+1)));
@@ -217,8 +216,8 @@ function addRoleButtons(){
   container.addChild(title);
 }
 
+//create back button and background shape
 function addBackButton(){
-  // Add the previous arrow to the existing button
 	prvArrow = new createjs.Bitmap(imgqueue.getResult("left"));
 	prvArrow.x = 40;
 	prvArrow.y = 40;
@@ -227,8 +226,6 @@ function addBackButton(){
 	container.addChild(prvArrow);
 	container.setChildIndex(prvArrow, 1);
 	
-	
-	// Create left rectangular button
 	prvShape = new createjs.Shape();
 	prvShape.graphics.beginFill("#ffffff").drawRoundRect(0, 0, 270, IMAGE_HEIGHT - 140, 30);  // Original orange color: #ff8c00
 	//prvShape.graphics.beginStroke("#000000").setStrokeStyle(3).drawRoundRect(0, 0, 270, IMAGE_HEIGHT - 140, 30);
@@ -242,8 +239,8 @@ function addBackButton(){
 	container.setChildIndex(prvShape, 1);
 }
 
+//create check button and background shape
 function addCheckButton(){
-  // Add the next arrow to the existing button
 	checkarrow = new createjs.Bitmap(imgqueue.getResult("check"));
 	checkarrow.x = IMAGE_WIDTH-280;
 	checkarrow.y = 40;
@@ -252,7 +249,6 @@ function addCheckButton(){
 	container.addChild(checkarrow);
 	container.setChildIndex(checkarrow, 1);
 	
-	// Create right rectangular button
   checkshape = new createjs.Shape();
 	checkshape.graphics.beginFill("#ffffff").drawRoundRect(0, 0, 270, IMAGE_HEIGHT - 140, 30); // Original orange color: #ff8c00
 	//nxtShape.graphics.beginStroke("#000000").setStrokeStyle(3).drawRoundRect(0, 0, 270, IMAGE_HEIGHT - 140, 30);
@@ -275,6 +271,7 @@ function playSound(name) {
 	//return createjs.Sound.play(name);
 }
 
+//called when a role is picked. Remove role buttons and allow user to confirm selection or return
 function roleClick(event){
   console.log("CLICK WORKED!",event.target.name);
   console.log("text: " + container.getChildIndex(title));
@@ -292,6 +289,7 @@ function roleClick(event){
 	resize();
 }
 
+//called when back button is pressed. If not already on the initial screen, return and draw role buttons
 function prvClck(event){
   console.log("BACK CLICK WORKED!");
   if(slide !== 0){
@@ -304,31 +302,40 @@ function prvClck(event){
   resize();
 }
 
+//called when check button is pressed
 function nxtClck(event){
   people[person].role = current_role;
+  //if there are still people to pick, return to the initial screen
   if(person < people.length-1){
     person++;
     prvClck();
   }
+  //if everybody has picked, draw final carousel
   else{
+    //get rid of back and check buttons
     container.removeChild(bmp);
     container.removeChild(checkshape);
     container.removeChild(checkarrow);
     container.removeChild(prvArrow);
     container.removeChild(prvShape);
+    
+    //create a draggable container for displaying results
     var dragger = new createjs.Container();
     dragger.x = dragger.y = 0;
     
+    //draw background of draggable container
     var hit = new createjs.Shape();
 		hit.graphics.beginFill("#ffcc80").drawRect(100, 250, people.length*600+100, 600);
 		dragger.addChild(hit);
 		dragger.hitArea = hit;
 		
+		//draw arrow showing that a drag is possible
 		var arrow = new createjs.Bitmap(imgqueue.getResult("dragright"));
 		arrow.x = 10;
 		arrow.y = 485;
 		dragger.addChild(arrow);
 		
+		//draw names of users, roles underneath names
     for(var i = 0; i < people.length; i++){
       console.log(people[i].name + ": " + people[i].role);
       var text = new createjs.Text(people[i].name, "80px Comic Sans MS", "#ff7700");
@@ -345,14 +352,15 @@ function nxtClck(event){
       container.addChild(dragger);
     }
     
+    //when clicked, record the intial position of the click
     var offset = 0;
     dragger.on("mousedown",function(evt){
       offset = evt.stageX - evt.currentTarget.x;
     });
+    
+    //if drag, use change in location of click to move draggable container
     dragger.on("pressmove",function(evt) {
-			// currentTarget will be the container that the event listener was added to:
 			evt.currentTarget.x = evt.stageX - offset;
-			// make sure to redraw the stage to show the change:
 			stage.update();
     });
   }
